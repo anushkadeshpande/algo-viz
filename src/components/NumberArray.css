@@ -1,0 +1,16 @@
+.animate-swap {
+  /* Your animation properties here */
+  animation: swap 0.5s ease-in-out;
+}
+
+@keyframes swap {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
