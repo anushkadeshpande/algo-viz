@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import "./NumberArray.css";
-import { motion } from "framer-motion";
 
 const NumberArray = ({
   arr,
