@@ -19,6 +19,7 @@ const NumberArray = ({
   };
 
   let i = 1;
+  const swaps: any = []
   useEffect(() => {
     const sorter = algorithm(arr.slice()); // Create a copy for sorting
 
@@ -46,8 +47,17 @@ const NumberArray = ({
           {
             i++;
             setTimeout(() => {
-              console.log("swapped");
-              console.log(arrayRef.current.children[swap[0]])
+              swaps.push(swap)
+              if(swaps.length - 1 > 0) {
+                // something was swapped before this
+                // remove the styles applied to the previous swap
+                const previousSwaps = swaps[swaps.length-2]
+                console.log(previousSwaps)
+                arrayRef.current.children[previousSwaps[0]].style.backgroundColor = "#fff";
+                arrayRef.current.children[previousSwaps[1]].style.backgroundColor = "#fff";
+              }
+              // console.log("swapped");
+              // console.log(arrayRef.current.children[swap[0]])
               arrayRef.current.children[swap[0]].style.backgroundColor = "rgb(244 114 182)";
               arrayRef.current.children[swap[1]].style.backgroundColor = "rgb(34 211 238)";
               [
@@ -61,7 +71,7 @@ const NumberArray = ({
               // arrayRef.current.children[swap[0]].style.color = "black";
               // arrayRef.current.children[swap[1]].style.color = "black";
 
-            }, i * 2000);
+            }, i * 1000);
           } // setArray(() => {
           //   return stepArray})
           // updateArray(updatedArray)
