@@ -1,5 +1,5 @@
 import NumberArray from "./components/NumberArray";
-import bubbleSort from "./utils/bubbleSort";
+import bubbleSort from "./utils/algorithms/sorting/bubbleSort";
 
 function BubbleSort({arr}: any) {
 	// console.log(Array.props.children)
