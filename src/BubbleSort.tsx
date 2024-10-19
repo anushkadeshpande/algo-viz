@@ -1,5 +1,6 @@
 import NumberArray from "./components/NumberArray";
 import bubbleSort from "./utils/algorithms/sorting/bubbleSort";
+import quickSort from "./utils/algorithms/sorting/quickSort";
 
 function BubbleSort({arr}: any) {
 	// console.log(Array.props.children)
@@ -11,7 +12,10 @@ function BubbleSort({arr}: any) {
 	// }
 	return (
 		<div>
+			<h2>Bubble Sort:</h2>
 			<NumberArray arr={arr} algorithm={bubbleSort} />
+			<h2>Quick Sort:</h2>
+			<NumberArray arr={arr} algorithm={quickSort} />
 		</div>
 	);
 }
