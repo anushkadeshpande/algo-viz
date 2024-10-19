@@ -4,10 +4,13 @@ import {
   BINARY_TREE,
   BUBBLE_SORT,
   GRAPH,
+  HEAP,
   LINKED_LIST,
   QUICK_SORT,
   SEARCHING,
   SORTING,
+  STACK,
+  TRIE,
 } from "./constants";
 
 export const menuOptions = [
@@ -24,7 +27,10 @@ export const menuOptions = [
       },
     ],
   },
+  { title: STACK, options: [] },
   { title: LINKED_LIST, options: [] },
   { title: BINARY_TREE, options: [] },
-  { title: GRAPH, options: [] }
+  { title: TRIE, options: [] },
+  { title: GRAPH, options: [] },
+  { title: HEAP, options: [] }
 ];
