@@ -1,6 +1,3 @@
-import './App.css'
-import BubbleSort from './BubbleSort'
-import Header from './components/Header'
 import SideBar from './components/SideBar'
 // import BubbleSort from './BubbleSort'
 // import Canvas from './Canvas'
