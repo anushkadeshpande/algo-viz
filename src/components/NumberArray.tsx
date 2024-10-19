@@ -12,41 +12,42 @@ const NumberArray = ({
   const [changedIndices, setChangedIndices] = useState<number[]>(arr);
   const arrayRef = useRef<any>();
 
-  // const updateArray = (updatedArray: any) => {
-  //   setTimeout(() => {
-  //     console.log(updatedArray), 2000;
-  //   });
-  // };
-
   let i = 1;
   const swaps: any = []
   useEffect(() => {
-    const sorter = algorithm(arr.slice()); // Create a copy for sorting
+    // Create an instance of the generator function
+    const sorter = algorithm(arr.slice());
 
     const iterateGenerator = (generator: Generator) => {
+      // Proceed with the function execution, till the next yield
+      // get the status of the function (whether it is done or not) and the return value in done and value
       const { done, value } = generator.next();
-      // console.log(done)
-      
 
+      // if the generator is not done yet
       if (!done) {
+
+        // destructure the values yielded
         const { stepArray, swap }: { stepArray: number[]; swap: number[] } =
         value as { stepArray: number[]; swap: number[] };
-        console.log(stepArray)
-        console.log(swap)
+        
+        // if the swap param has 2 numbers
         if (swap.length > 1) {
-          // const updatedArray = stepArray
-          // setArray(prevState => {
-
-          //   console.log("Swap" , swap)
-          //   console.log("Previous state",  prevState);
-
-          //   [prevState[swap[0]], prevState[swap[1]]] = [prevState[swap[1]], prevState[swap[0]]]
-          //   console.log("Updated state",  prevState)
-          //   console.log("Step Array" , stepArray);
-          //   return prevState
-          // });
-          // console.log(stepArray);
-          // console.log(arrayRef.current.children);
+          /* 
+          * It was tough to make the generator code wait till the action was displayed on the dom
+          * The generator used to do its action and exit and show the final result on the dom at the end
+          * 
+          * To overcome this problem, timeouts have been utilized
+          * 
+          * 1. An iterator variable `i` of type let was declared at the top level
+          * 2. Created a block and incremented the value of i
+          * 3. Added a setTimeout to perform the actual swap simulation on the DOM
+          * This setTimeout will execute every step in 1s and to ensure this, a block has been created where the value of i is incremented. setTimeout will refer to the value of i in its parent block, and i being block scoped, every block will refer to a different i, with different value. This ensures that every simulation happens exactly 1s apart from each other
+          * 
+          * 
+          * In a nutshell, the entire sorting is executed, the values are yielded and then the simulation begins.
+          * 
+          * TODO: What are the issues faced with extremely large inputs
+          */
           {
             i++;
             setTimeout(() => {
@@ -59,8 +60,6 @@ const NumberArray = ({
                 arrayRef.current.children[previousSwaps[0]].style.backgroundColor = "#fff";
                 arrayRef.current.children[previousSwaps[1]].style.backgroundColor = "#fff";
               }
-              // console.log("swapped");
-              // console.log(arrayRef.current.children[swap[0]])
               arrayRef.current.children[swap[0]].style.backgroundColor = "rgb(244 114 182)";
               arrayRef.current.children[swap[1]].style.backgroundColor = "rgb(34 211 238)";
               [
@@ -71,13 +70,8 @@ const NumberArray = ({
                 arrayRef.current.children[swap[0]].innerText,
               ];
 
-              // arrayRef.current.children[swap[0]].style.color = "black";
-              // arrayRef.current.children[swap[1]].style.color = "black";
-
             }, i * 1000);
-          } // setArray(() => {
-          //   return stepArray})
-          // updateArray(updatedArray)
+          } 
           setChangedIndices(swap);
           iterateGenerator(generator);
         } else {
