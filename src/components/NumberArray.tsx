@@ -12,11 +12,11 @@ const NumberArray = ({
   const [changedIndices, setChangedIndices] = useState<number[]>(arr);
   const arrayRef = useRef<any>();
 
-  const updateArray = (updatedArray: any) => {
-    setTimeout(() => {
-      console.log(updatedArray), 2000;
-    });
-  };
+  // const updateArray = (updatedArray: any) => {
+  //   setTimeout(() => {
+  //     console.log(updatedArray), 2000;
+  //   });
+  // };
 
   let i = 1;
   const swaps: any = []
@@ -25,11 +25,14 @@ const NumberArray = ({
 
     const iterateGenerator = (generator: Generator) => {
       const { done, value } = generator.next();
-
-      const { stepArray, swap }: { stepArray: number[]; swap: number[] } =
-        value as { stepArray: number[]; swap: number[] };
+      // console.log(done)
+      
 
       if (!done) {
+        const { stepArray, swap }: { stepArray: number[]; swap: number[] } =
+        value as { stepArray: number[]; swap: number[] };
+        console.log(stepArray)
+        console.log(swap)
         if (swap.length > 1) {
           // const updatedArray = stepArray
           // setArray(prevState => {
@@ -42,7 +45,7 @@ const NumberArray = ({
           //   console.log("Step Array" , stepArray);
           //   return prevState
           // });
-          console.log(stepArray);
+          // console.log(stepArray);
           // console.log(arrayRef.current.children);
           {
             i++;
@@ -52,7 +55,7 @@ const NumberArray = ({
                 // something was swapped before this
                 // remove the styles applied to the previous swap
                 const previousSwaps = swaps[swaps.length-2]
-                console.log(previousSwaps)
+                // console.log(previousSwaps)
                 arrayRef.current.children[previousSwaps[0]].style.backgroundColor = "#fff";
                 arrayRef.current.children[previousSwaps[1]].style.backgroundColor = "#fff";
               }
