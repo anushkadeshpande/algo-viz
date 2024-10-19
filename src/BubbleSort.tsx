@@ -1,4 +1,4 @@
-import NumberArray from "./components/NumberArray";
+import NumberArray from "./components/data-structures/NumberArray";
 import bubbleSort from "./utils/algorithms/sorting/bubbleSort";
 import quickSort from "./utils/algorithms/sorting/quickSort";
 
