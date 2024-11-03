@@ -57,8 +57,8 @@ const NumberArray = ({
                 // remove the styles applied to the previous swap
                 const previousSwaps = swaps[swaps.length-2]
                 // console.log(previousSwaps)
-                arrayRef.current.children[previousSwaps[0]].style.backgroundColor = "#fff";
-                arrayRef.current.children[previousSwaps[1]].style.backgroundColor = "#fff";
+                arrayRef.current.children[previousSwaps[0]].style.backgroundColor = "transparent";
+                arrayRef.current.children[previousSwaps[1]].style.backgroundColor = "transparent";
               }
               arrayRef.current.children[swap[0]].style.backgroundColor = "rgb(244 114 182)";
               arrayRef.current.children[swap[1]].style.backgroundColor = "rgb(34 211 238)";
@@ -94,16 +94,16 @@ const NumberArray = ({
       <div style={{ display: "flex" }} ref={arrayRef}>
         {array.map((element: number, idx: number) => (
           <div
-            className="arrayElement"
+            className="arrayElement font-bold"
             id={`arrayElement-${idx}`}
             key={idx}
             style={{
-              height: "40px",
-              width: "40px",
-              border: "1px solid black",
+              height: "50px",
+              width: "50px",
+              border: "2px solid #fff",
               display: "flex",
               justifyContent: "center",
-              alignItems: "center",
+              alignItems: "center"
             }}
           >
             {element}
