@@ -18,7 +18,7 @@ function App() {
     <div className='h-screen w-screen bg-gray-900 flex'>
 
       <SideBar view = {view} setView = {setView}/>
-      <MainContent view = {view} setView = {setView} eventArr={eventArr}/>
+      <MainContent view = {view} eventArr={eventArr}/>
     {/* <Array arr={[1, 2, 3, 4, 5, 100, 3, 4, 5, 1, 3]}/> */}
     {/* {bubbleSort()} */}
     {/* <BubbleSort arr={[1, 2, 3, 4, 5, 100, 3, 4, 5, 1, 3]} /> */}

@@ -1,4 +1,6 @@
-function* quickSort(arr: Array<number>, low = 0, high = arr.length - 1): any {
+import { AlgorithmEvent, EventType } from "../../../types/algorithmEvents";
+
+function* quickSort(arr: Array<number>, low = 0, high = arr.length - 1): Generator<AlgorithmEvent> {
   if (low < high) {
     const pivot = arr[high];
 
@@ -8,13 +10,20 @@ function* quickSort(arr: Array<number>, low = 0, high = arr.length - 1): any {
       if (arr[j] < pivot) {
         i++;
         [arr[i], arr[j]] = [arr[j], arr[i]];
-        yield {stepArray: arr, swap: [i, j]}
+        // yield {stepArray: arr, swap: [i, j]}
+        yield {
+          type: EventType.SWAP,
+          indices: [i, j]
+        }
       }
     }
 
     [arr[i + 1], arr[high]] = [arr[high], arr[i+1]];
-    yield {stepArray: arr, swap: [i+1, high]}
-
+    // yield {stepArray: arr, swap: [i+1, high]}
+    yield {
+          type: EventType.SWAP,
+          indices: [i+1, high]
+        }
     const pi = i + 1;
 
     yield * quickSort(arr, low, pi - 1);
