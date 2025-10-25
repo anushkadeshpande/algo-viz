@@ -54,42 +54,40 @@ const Menu = ({setView, setIsOpen, isCollapsed = false, view}: any) => {
         {menuOptions.map((option) => (
           <li
             key={option.title}
-            className="bg-gray-700 px-4 py-2 rounded-md cursor-pointer my-3"
-            // hover:pb-4 ease-in duration-300 transition-all
+            className="bg-gray-700 px-4 py-2 rounded-md cursor-pointer my-3 hover:bg-gray-600 transition-colors"
             onClick={() =>
-              setSelectedMenuOption(option.title)
+              setSelectedMenuOption(selectedMenuOption === option.title ? "" : option.title)
             }
-            // onMouseLeave={() =>
-            //   setSelectedMenuOption("")
-            // }
           >
             <span>{option.title}</span>
             {/* Show sub menu options */}
             {selectedMenuOption === option.title ? (
-              <ul>
+              <ul className="mt-2">
                 {option.options.map((op) => (
                   <li
                     key={op.title}
-                    className="bg-slate-600 pl-4 rounded-md my-2"
-                    onClick={() =>
-                      setSelectedSubMenuOption(op.title)
-                    }
+                    className="bg-slate-600 pl-4 py-2 rounded-md my-2 hover:bg-slate-500 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedSubMenuOption(selectedSubMenuOption === op.title ? "" : op.title);
+                    }}
                   >
                     <span>{op.title}</span>
 
                     {/* Show sub sub menu options */}
                     {
-                      selectedSubMenuOption === op.title? <ul>
+                      selectedSubMenuOption === op.title? <ul className="mt-2">
                         {
                           op.options.map(o => <li key={o}
-                            className={`pl-4 rounded-md my-2 transition-colors ${
+                            className={`pl-4 py-1.5 rounded-md my-2 transition-colors ${
                               view === o 
-                                ? 'bg-gray-600 text-white font-semibold border-l-4 border-yellow-500' 
+                                ? 'bg-gray-900 text-white font-semibold border-l-4 border-yellow-500' 
                                 : 'bg-slate-600 hover:bg-slate-500'
                             }`}
-                            onClick={() =>
-                              handleAlgorithmSelect(o)
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAlgorithmSelect(o);
+                            }}
                             >
                             <span>{o}</span>
                           </li>)

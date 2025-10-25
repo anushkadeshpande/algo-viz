@@ -13,7 +13,7 @@ import { AlgorithmEvent, EventType, isSwapEvent } from "../types/algorithmEvents
  * @param algorithm - Generator function that yields AlgorithmEvent objects
  * @param eventArr - Shared array to track all timeout handles
  * @param arrayRef - Reference to the DOM container holding array elements
- * @returns Current operation message being displayed
+ * @returns Array of all operation messages
  */
 export const useAlgorithmAnimation = (
   arr: number[],
@@ -21,8 +21,8 @@ export const useAlgorithmAnimation = (
   eventArr: Array<ReturnType<typeof setTimeout>>,
   arrayRef: React.RefObject<HTMLDivElement>
 ) => {
-  // State: holds the current operation being displayed
-  const [currentOperation, setCurrentOperation] = useState<string>("");
+  // State: holds all operations performed during the animation
+  const [operations, setOperations] = useState<string[]>([]);
   
   // Ref to track all scheduled timeout handles created by the current animation
   const localTimeoutsRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
@@ -41,7 +41,7 @@ export const useAlgorithmAnimation = (
     localTimeoutsRef.current = [];
     
     // Reset operation log display
-    setCurrentOperation("Starting visualization...");
+    setOperations(["Starting visualization..."]);
 
     // --- RESET DOM TO MATCH INITIAL ARRAY ---
     // Reset all DOM elements to their original state
@@ -72,6 +72,7 @@ export const useAlgorithmAnimation = (
 
       if (!done) {
         const event = value as AlgorithmEvent;
+        const currentStep = stepCounter; // Capture the current step number
         
         // Schedule the visualization of this event
         const timeoutId = setTimeout(() => {
@@ -83,11 +84,13 @@ export const useAlgorithmAnimation = (
           }
 
           // Visualize the current event based on its type
-          visualizeEvent(arrayRef.current, event, stepCounter, setCurrentOperation);
+          visualizeEvent(arrayRef.current, event, currentStep, (msg: string) => {
+            setOperations(prev => [...prev, msg]);
+          });
           
           // Store current event as previous for next iteration
           previousEvent = event;
-        }, stepCounter * 1000);
+        }, currentStep * 1000);
 
         eventArr.push(timeoutId);
         localTimeoutsRef.current.push(timeoutId);
@@ -104,7 +107,7 @@ export const useAlgorithmAnimation = (
             clearEventVisualization(arrayRef.current, previousEvent);
           }
           
-          setCurrentOperation(`✓ Visualization complete! Total steps: ${stepCounter - 1}`);
+          setOperations(prev => [...prev, `✓ Visualization complete! Total steps: ${stepCounter - 1}`]);
         }, stepCounter * 1000);
         
         eventArr.push(finalTimeoutId);
@@ -125,7 +128,7 @@ export const useAlgorithmAnimation = (
     };
   }, [algorithm, arr, eventArr, arrayRef]);
 
-  return currentOperation;
+  return operations;
 };
 
 /**

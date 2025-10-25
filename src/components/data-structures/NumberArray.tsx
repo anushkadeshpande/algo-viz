@@ -41,8 +41,8 @@ const NumberArray = ({
   const arrayRef = useRef<HTMLDivElement>(null);
   
   // Custom hook: manages all animation logic based on events from the algorithm
-  // Returns the current operation message to display
-  const currentOperation = useAlgorithmAnimation(arr, algorithm, eventArr, arrayRef);
+  // Returns an array of all operation messages
+  const operations = useAlgorithmAnimation(arr, algorithm, eventArr, arrayRef);
   
   // Update array state when input changes
   if (arr !== array) {
@@ -50,37 +50,41 @@ const NumberArray = ({
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-7xl mx-auto">
-      {/* Operation Log - Shows what's happening in real-time */}
-      <OperationLog currentOperation={currentOperation} />
+    <div className="flex flex-col h-full w-full max-w-7xl mx-auto">
+      {/* Array Visualization - Top Section */}
+      <div className="flex-1 flex items-center justify-center overflow-auto py-8">
+        <div className="flex flex-wrap justify-center gap-1 sm:gap-0" ref={arrayRef}>
+          {/* 
+            Render the array elements as visual boxes
+            - The array state holds the original input values
+            - During animation, we directly manipulate the DOM (innerText and backgroundColor)
+            - This allows the generator to complete instantly,
+              while the animation plays step-by-step by swapping DOM text content
+          */}
+          {array.map((element: number, idx: number) => (
+            <div
+              className="arrayElement font-bold text-xs sm:text-sm md:text-base"
+              key={idx}
+              style={{
+                height: "40px",
+                width: "40px",
+                border: "2px solid #fff",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "transparent",
+                transition: "background-color 0.3s ease",
+              }}
+            >
+              {element}
+            </div>
+          ))}
+        </div>
+      </div>
 
-      {/* Array Visualization */}
-      <div className="flex flex-wrap justify-center gap-1 sm:gap-0" ref={arrayRef}>
-        {/* 
-          Render the array elements as visual boxes
-          - The array state holds the original input values
-          - During animation, we directly manipulate the DOM (innerText and backgroundColor)
-          - This allows the generator to complete instantly,
-            while the animation plays step-by-step by swapping DOM text content
-        */}
-        {array.map((element: number, idx: number) => (
-          <div
-            className="arrayElement font-bold text-xs sm:text-sm md:text-base"
-            key={idx}
-            style={{
-              height: "40px",
-              width: "40px",
-              border: "2px solid #fff",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              backgroundColor: "transparent",
-              transition: "background-color 0.3s ease",
-            }}
-          >
-            {element}
-          </div>
-        ))}
+      {/* Operation Log - Bottom Section (Fixed) */}
+      <div className="border-t border-gray-700">
+        <OperationLog operations={operations} />
       </div>
     </div>
   );
