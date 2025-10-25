@@ -4,17 +4,30 @@ import "./NumberArray.css";
 const NumberArray = ({
   arr,
   algorithm,
+  eventArr
 }: {
   arr: Array<number>;
   algorithm: any;
+  eventArr: any
 }) => {
   const [array, setArray] = useState<number[]>(arr);
   const [changedIndices, setChangedIndices] = useState<number[]>(arr);
   const arrayRef = useRef<any>();
+  // const [algo, setAlgo] = useState(algorithm)
 
   let i = 1;
   const swaps: any = []
   useEffect(() => {
+    console.log(algorithm)
+    // Clear the eventArr
+    console.log([...eventArr])
+    console.log(eventArr)
+    // console.log(eventArr.length)
+    if(eventArr && eventArr.length > 0) {
+      eventArr.forEach((e: any) => {
+        clearTimeout(e)
+      });
+    }
     // Create an instance of the generator function
     const sorter = algorithm(arr.slice());
 
@@ -50,7 +63,7 @@ const NumberArray = ({
           */
           {
             i++;
-            setTimeout(() => {
+            eventArr.push(setTimeout(() => {
               swaps.push(swap)
               if(swaps.length - 1 > 0) {
                 // something was swapped before this
@@ -70,7 +83,7 @@ const NumberArray = ({
                 arrayRef.current.children[swap[0]].innerText,
               ];
 
-            }, i * 1000);
+            }, i * 1000))
           } 
           setChangedIndices(swap);
           iterateGenerator(generator);
@@ -81,7 +94,7 @@ const NumberArray = ({
     };
 
     iterateGenerator(sorter);
-  }, []);
+  }, [algorithm]);
 
   return (
     <>
@@ -91,6 +104,7 @@ const NumberArray = ({
         initial={{ opacity: 0, scale: 0 }}
         animate={{ opacity: 1, scale: 1 }}
       /> */}
+      {algorithm? 
       <div style={{ display: "flex" }} ref={arrayRef}>
         {array.map((element: number, idx: number) => (
           <div
@@ -110,6 +124,7 @@ const NumberArray = ({
           </div>
         ))}
       </div>
+: ''}
     </>
   );
 };
