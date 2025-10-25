@@ -16,7 +16,7 @@ interface OperationLogProps {
 
 const OperationLog = ({ operations }: OperationLogProps) => {
   const logEndRef = useRef<HTMLDivElement>(null);
-  const { size: height, isResizing, containerRef, startResize } = useResizable(256, 100, 600, 'vertical');
+  const { size: height, containerRef, startResize } = useResizable(256, 100, 600, 'vertical');
 
   // Auto-scroll to the bottom when new operations are added
   useEffect(() => {
