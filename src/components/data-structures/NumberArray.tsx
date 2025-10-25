@@ -14,6 +14,10 @@ const NumberArray = ({
   // This stays constant - we manipulate the DOM directly for animation
   const [array, setArray] = useState<number[]>(arr);
   
+  // State: holds the current operation being displayed
+  // Shows what swap is happening in real-time during the animation
+  const [currentOperation, setCurrentOperation] = useState<string>("");
+  
   // Ref to the container div holding all array elements
   // Used to access and manipulate individual element DOM nodes during animation
   const arrayRef = useRef<HTMLDivElement>(null);
@@ -40,6 +44,9 @@ const NumberArray = ({
     // Reset the array to the initial input values
     // This ensures we start fresh when arr or algorithm changes
     setArray(arr);
+    
+    // Reset operation log display
+    setCurrentOperation("Starting animation...");
 
     // --- RESET DOM TO MATCH INITIAL ARRAY ---
     // When switching algorithms, the DOM has been manipulated by the previous animation
@@ -113,6 +120,13 @@ const NumberArray = ({
             // Store current swap for tracking
             swaps.push(swap);
             
+            // Get the actual values being swapped for display in the log
+            const value0 = arrayRef.current.children[swap[0]].textContent || "";
+            const value1 = arrayRef.current.children[swap[1]].textContent || "";
+            
+            // Update the operation log to show what's happening
+            setCurrentOperation(`Step ${swaps.length}: Swapping ${value0} (index ${swap[0]}) with ${value1} (index ${swap[1]})`);
+            
             // If this isn't the first swap, remove highlight from previous swap
             if (swaps.length > 1) {
               const previousSwap = swaps[swaps.length - 2];
@@ -152,6 +166,9 @@ const NumberArray = ({
         const finalTimeoutId = setTimeout(() => {
           if (!arrayRef.current) return;
           
+          // Update operation log to show completion
+          setCurrentOperation(`✓ Sorting complete! Total steps: ${swaps.length}`);
+          
           // Clear highlights from the last swap
           if (swaps.length > 0) {
             const lastSwap = swaps[swaps.length - 1];
@@ -183,39 +200,50 @@ const NumberArray = ({
   }, [algorithm, arr, eventArr]); // Re-run effect when algorithm or input array changes
 
   return (
-    <div style={{ display: "flex" }} ref={arrayRef}>
-      {/* 
-        Render the initial unsorted array
-        - The array state holds the original input values
-        - During animation, we directly manipulate the DOM (innerText and backgroundColor)
-        - This approach allows the generator to complete sorting instantly,
-          while the animation plays step-by-step by swapping DOM text content
-        
-        Benefits of this approach:
-        1. Generator runs to completion synchronously - all swaps are pre-calculated
-        2. Animation is purely visual (DOM manipulation) and doesn't re-trigger React renders
-        3. Works well for visualizing algorithms that need to show intermediate steps
-      */}
-      {array.map((element: number, idx: number) => {
-        return (
-          <div
-            className="arrayElement font-bold"
-            key={idx}
-            style={{
-              height: "50px",
-              width: "50px",
-              border: "2px solid #fff",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              backgroundColor: "transparent", // Default color; changed via DOM manipulation during animation
-              transition: "background-color 0.3s ease", // Smooth color transitions
-            }}
-          >
-            {element}
-          </div>
-        );
-      })}
+    <div className="flex flex-col items-center gap-4">
+      {/* Operation Log Display */}
+      <div className="bg-gray-800 border border-gray-600 rounded-lg p-4 min-w-[500px]">
+        <div className="text-sm text-gray-400 mb-2">Current Operation:</div>
+        <div className="text-white font-mono text-lg">
+          {currentOperation || "Ready to start..."}
+        </div>
+      </div>
+
+      {/* Array Visualization */}
+      <div style={{ display: "flex" }} ref={arrayRef}>
+        {/* 
+          Render the initial unsorted array
+          - The array state holds the original input values
+          - During animation, we directly manipulate the DOM (innerText and backgroundColor)
+          - This approach allows the generator to complete sorting instantly,
+            while the animation plays step-by-step by swapping DOM text content
+          
+          Benefits of this approach:
+          1. Generator runs to completion synchronously - all swaps are pre-calculated
+          2. Animation is purely visual (DOM manipulation) and doesn't re-trigger React renders
+          3. Works well for visualizing algorithms that need to show intermediate steps
+        */}
+        {array.map((element: number, idx: number) => {
+          return (
+            <div
+              className="arrayElement font-bold"
+              key={idx}
+              style={{
+                height: "50px",
+                width: "50px",
+                border: "2px solid #fff",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "transparent", // Default color; changed via DOM manipulation during animation
+                transition: "background-color 0.3s ease", // Smooth color transitions
+              }}
+            >
+              {element}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
