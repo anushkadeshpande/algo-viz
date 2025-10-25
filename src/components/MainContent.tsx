@@ -39,7 +39,7 @@ const MainContent = ({view, eventArr}: {view: string, eventArr: Array<ReturnType
     <div className='text-white flex flex-col flex-1 overflow-hidden'>
       {/* Control Buttons - Only show when an algorithm is selected */}
       {view && view !== '' && (
-        <div className="flex justify-center gap-3 py-4 px-4 border-b border-gray-700">
+        <div className="sticky top-0 z-10 flex justify-center gap-3 py-4 px-4 border-b border-gray-700 bg-gray-900">
           {isPaused && !isComplete && (
             <button
               onClick={handlePlay}
