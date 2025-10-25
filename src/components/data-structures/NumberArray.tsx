@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./NumberArray.css";
 
 const NumberArray = ({
@@ -7,109 +7,185 @@ const NumberArray = ({
   eventArr
 }: {
   arr: Array<number>;
-  algorithm: any;
-  eventArr: any
+  algorithm: (arr: number[]) => Generator;
+  eventArr: Array<ReturnType<typeof setTimeout>>;
 }) => {
+  // State: holds the initial unsorted array for rendering
+  // This stays constant - we manipulate the DOM directly for animation
   const [array, setArray] = useState<number[]>(arr);
-  const [changedIndices, setChangedIndices] = useState<number[]>(arr);
-  const arrayRef = useRef<any>();
-  // const [algo, setAlgo] = useState(algorithm)
+  
+  // Ref to the container div holding all array elements
+  // Used to access and manipulate individual element DOM nodes during animation
+  const arrayRef = useRef<HTMLDivElement>(null);
+  
+  // Ref to track all scheduled timeout handles created by the current animation
+  // Allows us to cancel them on cleanup to prevent memory leaks
+  const localTimeoutsRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
 
-  let i = 1;
-  const swaps: any = []
   useEffect(() => {
-    console.log(algorithm)
-    // Clear the eventArr
-    console.log([...eventArr])
-    console.log(eventArr)
-    // console.log(eventArr.length)
-    if(eventArr && eventArr.length > 0) {
-      eventArr.forEach((e: any) => {
-        clearTimeout(e)
+    // --- CLEANUP PHASE ---
+    // Clear any existing timeouts from the shared eventArr (from previous algorithm runs)
+    // This ensures old animations stop when the view/algorithm changes
+    if (eventArr && eventArr.length > 0) {
+      eventArr.forEach((timeoutId: ReturnType<typeof setTimeout>) => {
+        clearTimeout(timeoutId);
       });
+      // Empty the shared array so it doesn't hold stale handles
+      eventArr.length = 0;
     }
-    // Create an instance of the generator function
+
+    // Reset local timeout tracking for this effect run
+    localTimeoutsRef.current = [];
+
+    // Reset the array to the initial input values
+    // This ensures we start fresh when arr or algorithm changes
+    setArray(arr);
+
+    // --- ANIMATION SETUP ---
+    // Create an instance of the generator function with a copy of the input array
+    // The generator will yield each swap step during sorting
     const sorter = algorithm(arr.slice());
 
+    // Counter to schedule each animation step 1 second apart
+    let stepCounter = 1;
+    
+    // Array to track all swap operations for reverting previous highlights
+    const swaps: number[][] = [];
+
     const iterateGenerator = (generator: Generator) => {
-      // Proceed with the function execution, till the next yield
-      // get the status of the function (whether it is done or not) and the return value in done and value
+      // Proceed with the generator execution until the next yield
+      // `done` tells us if the generator has finished; `value` holds the yielded data
       const { done, value } = generator.next();
 
-      // if the generator is not done yet
+      // If the generator is not done yet, process the current step
       if (!done) {
-
-        // destructure the values yielded
-        const { stepArray, swap }: { stepArray: number[]; swap: number[] } =
-        value as { stepArray: number[]; swap: number[] };
+        // Destructure the values yielded by the algorithm
+        // swap: the indices being swapped in this step
+        const { swap }: { swap: number[] } =
+          value as { swap: number[] };
         
-        // if the swap param has 2 numbers
+        // Only animate if we have a valid swap (2 indices)
         if (swap.length > 1) {
           /* 
-          * It was tough to make the generator code wait till the action was displayed on the dom
-          * The generator used to do its action and exit and show the final result on the dom at the end
-          * 
-          * To overcome this problem, timeouts have been utilized
-          * 
-          * 1. An iterator variable `i` of type let was declared at the top level
-          * 2. Created a block and incremented the value of i
-          * 3. Added a setTimeout to perform the actual swap simulation on the DOM
-          * This setTimeout will execute every step in 1s and to ensure this, a block has been created where the value of i is incremented. setTimeout will refer to the value of i in its parent block, and i being block scoped, every block will refer to a different i, with different value. This ensures that every simulation happens exactly 1s apart from each other
-          * 
-          * 
-          * In a nutshell, the entire sorting is executed, the values are yielded and then the simulation begins.
-          * 
-          * TODO: What are the issues faced with extremely large inputs
-          */
-          {
-            i++;
-            eventArr.push(setTimeout(() => {
-              swaps.push(swap)
-              if(swaps.length - 1 > 0) {
-                // something was swapped before this
-                // remove the styles applied to the previous swap
-                const previousSwaps = swaps[swaps.length-2]
-                // console.log(previousSwaps)
-                arrayRef.current.children[previousSwaps[0]].style.backgroundColor = "transparent";
-                arrayRef.current.children[previousSwaps[1]].style.backgroundColor = "transparent";
-              }
-              arrayRef.current.children[swap[0]].style.backgroundColor = "rgb(244 114 182)";
-              arrayRef.current.children[swap[1]].style.backgroundColor = "rgb(34 211 238)";
-              [
-                arrayRef.current.children[swap[0]].innerText,
-                arrayRef.current.children[swap[1]].innerText,
-              ] = [
-                arrayRef.current.children[swap[1]].innerText,
-                arrayRef.current.children[swap[0]].innerText,
-              ];
+           * ANIMATION APPROACH (Original Working Logic):
+           * 
+           * Challenge: The generator executes synchronously and yields all steps immediately.
+           * The sorting completes instantly, but we want to visualize each step.
+           * 
+           * Solution: 
+           * 1. Let the generator run completely and collect all swap operations
+           * 2. Schedule DOM manipulation timeouts to display each swap sequentially
+           * 3. Each timeout directly modifies the DOM (innerText and backgroundColor)
+           *    to show the swap animation without triggering React re-renders
+           * 
+           * How it works:
+           * 1. stepCounter tracks which animation frame we're scheduling (1st, 2nd, 3rd, etc.)
+           * 2. Each setTimeout is scheduled for (stepCounter * 1000) ms in the future
+           * 3. We increment stepCounter for each step, ensuring frames appear 1 second apart
+           * 4. Inside each timeout:
+           *    - Remove highlight from previous swap (if any)
+           *    - Highlight current swap indices with colors
+           *    - Swap the DOM text content to show the swap visually
+           * 5. All timeout handles are stored in both eventArr (shared) and localTimeoutsRef (local)
+           *    so they can be cancelled if the component unmounts or algorithm changes
+           * 
+           * Result: The entire sorting executes instantly, all swaps are recorded,
+           * then the animation plays step-by-step showing each swap with 1s intervals.
+           */
+          const timeoutId = setTimeout(() => {
+            // Check if the DOM ref is still valid (component not unmounted)
+            if (!arrayRef.current) return;
 
-            }, i * 1000))
-          } 
-          setChangedIndices(swap);
+            // Store current swap for tracking
+            swaps.push(swap);
+            
+            // If this isn't the first swap, remove highlight from previous swap
+            if (swaps.length > 1) {
+              const previousSwap = swaps[swaps.length - 2];
+              arrayRef.current.children[previousSwap[0]].setAttribute('style', 
+                arrayRef.current.children[previousSwap[0]].getAttribute('style')?.replace(/background-color:[^;]+;?/, '') || ''
+              );
+              arrayRef.current.children[previousSwap[1]].setAttribute('style',
+                arrayRef.current.children[previousSwap[1]].getAttribute('style')?.replace(/background-color:[^;]+;?/, '') || ''
+              );
+            }
+            
+            // Highlight the two elements being swapped
+            // First index gets pink, second gets cyan
+            const elem0 = arrayRef.current.children[swap[0]] as HTMLElement;
+            const elem1 = arrayRef.current.children[swap[1]] as HTMLElement;
+            
+            elem0.style.backgroundColor = "rgb(244 114 182)"; // Pink
+            elem1.style.backgroundColor = "rgb(34 211 238)"; // Cyan
+            
+            // Swap the text content in the DOM to show the swap visually
+            [elem0.innerText, elem1.innerText] = [elem1.innerText, elem0.innerText];
+          }, stepCounter * 1000);
+
+          // Store the timeout ID in both the shared and local registries
+          // so it can be cancelled during cleanup
+          eventArr.push(timeoutId);
+          localTimeoutsRef.current.push(timeoutId);
+
+          // Increment the counter so the next step schedules 1 second later
+          stepCounter++;
+
+          // Recursively process the next step from the generator
           iterateGenerator(generator);
-        } else {
-          // console.error("Unexpected value:", value);
         }
+      } else {
+        // Generator is done; schedule a final timeout to clear highlights after the last step
+        const finalTimeoutId = setTimeout(() => {
+          if (!arrayRef.current) return;
+          
+          // Clear highlights from the last swap
+          if (swaps.length > 0) {
+            const lastSwap = swaps[swaps.length - 1];
+            const elem0 = arrayRef.current.children[lastSwap[0]] as HTMLElement;
+            const elem1 = arrayRef.current.children[lastSwap[1]] as HTMLElement;
+            elem0.style.backgroundColor = "transparent";
+            elem1.style.backgroundColor = "transparent";
+          }
+        }, stepCounter * 1000);
+        
+        eventArr.push(finalTimeoutId);
+        localTimeoutsRef.current.push(finalTimeoutId);
       }
     };
 
+    // Start the recursive iteration through all generator steps
+    // This runs synchronously and schedules all animations immediately
     iterateGenerator(sorter);
-  }, [algorithm]);
+
+    // --- CLEANUP FUNCTION ---
+    // Runs when the component unmounts or when dependencies (arr, algorithm) change
+    // Cancels all pending timeouts to prevent memory leaks and stale DOM updates
+    return () => {
+      localTimeoutsRef.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      localTimeoutsRef.current = [];
+    };
+  }, [algorithm, arr, eventArr]); // Re-run effect when algorithm or input array changes
 
   return (
-    <>
-      {/* <motion.div
-        style={{ backgroundColor: "#000", height: "200px", width: "200px" }}
-        className="box"
-        initial={{ opacity: 0, scale: 0 }}
-        animate={{ opacity: 1, scale: 1 }}
-      /> */}
-      {algorithm? 
-      <div style={{ display: "flex" }} ref={arrayRef}>
-        {array.map((element: number, idx: number) => (
+    <div style={{ display: "flex" }} ref={arrayRef}>
+      {/* 
+        Render the initial unsorted array
+        - The array state holds the original input values
+        - During animation, we directly manipulate the DOM (innerText and backgroundColor)
+        - This approach allows the generator to complete sorting instantly,
+          while the animation plays step-by-step by swapping DOM text content
+        
+        Benefits of this approach:
+        1. Generator runs to completion synchronously - all swaps are pre-calculated
+        2. Animation is purely visual (DOM manipulation) and doesn't re-trigger React renders
+        3. Works well for visualizing algorithms that need to show intermediate steps
+      */}
+      {array.map((element: number, idx: number) => {
+        return (
           <div
             className="arrayElement font-bold"
-            id={`arrayElement-${idx}`}
             key={idx}
             style={{
               height: "50px",
@@ -117,15 +193,16 @@ const NumberArray = ({
               border: "2px solid #fff",
               display: "flex",
               justifyContent: "center",
-              alignItems: "center"
+              alignItems: "center",
+              backgroundColor: "transparent", // Default color; changed via DOM manipulation during animation
+              transition: "background-color 0.3s ease", // Smooth color transitions
             }}
           >
             {element}
           </div>
-        ))}
-      </div>
-: ''}
-    </>
+        );
+      })}
+    </div>
   );
 };
 
