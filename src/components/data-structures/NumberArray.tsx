@@ -50,12 +50,12 @@ const NumberArray = ({
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-4 w-full max-w-7xl mx-auto">
       {/* Operation Log - Shows what's happening in real-time */}
       <OperationLog currentOperation={currentOperation} />
 
       {/* Array Visualization */}
-      <div style={{ display: "flex" }} ref={arrayRef}>
+      <div className="flex flex-wrap justify-center gap-1 sm:gap-0" ref={arrayRef}>
         {/* 
           Render the array elements as visual boxes
           - The array state holds the original input values
@@ -65,11 +65,11 @@ const NumberArray = ({
         */}
         {array.map((element: number, idx: number) => (
           <div
-            className="arrayElement font-bold"
+            className="arrayElement font-bold text-xs sm:text-sm md:text-base"
             key={idx}
             style={{
-              height: "50px",
-              width: "50px",
+              height: "40px",
+              width: "40px",
               border: "2px solid #fff",
               display: "flex",
               justifyContent: "center",
