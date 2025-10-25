@@ -29,27 +29,32 @@ const SideBar = ({view, setView, isOpen, setIsOpen, isCollapsed, setIsCollapsed}
         overflow-y-auto
         overflow-x-hidden
       `}>
-        <Header isCollapsed={isCollapsed} />
+        <div className="w-full px-3">
+          <Header isCollapsed={isCollapsed} />
+        </div>
         
         {/* Collapse/Expand Toggle Button - Desktop Only */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="hidden md:flex mt-3 bg-gray-700 text-white p-2 rounded-lg hover:bg-gray-600 transition-colors w-full mx-3 justify-center items-center"
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          style={{ maxWidth: isCollapsed ? '56px' : 'calc(100% - 24px)' }}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {isCollapsed ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-            )}
-          </svg>
-          {!isCollapsed && <span className="ml-2 text-sm">Collapse</span>}
-        </button>
+        <div className="w-full px-3">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden md:flex mt-3 bg-gray-700 text-white p-2 rounded-lg hover:bg-gray-600 transition-colors w-full justify-center items-center"
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isCollapsed ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              )}
+            </svg>
+            {!isCollapsed && <span className="ml-2 text-sm">Collapse</span>}
+          </button>
+        </div>
 
-        <Menu view={view} setView={setView} setIsOpen={setIsOpen} isCollapsed={isCollapsed} />
+        <div className="flex-1 overflow-y-auto overflow-x-hidden w-full">
+          <Menu view={view} setView={setView} setIsOpen={setIsOpen} isCollapsed={isCollapsed} />
+        </div>
       </div>
     </>
   );
