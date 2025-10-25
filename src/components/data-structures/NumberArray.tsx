@@ -41,6 +41,20 @@ const NumberArray = ({
     // This ensures we start fresh when arr or algorithm changes
     setArray(arr);
 
+    // --- RESET DOM TO MATCH INITIAL ARRAY ---
+    // When switching algorithms, the DOM has been manipulated by the previous animation
+    // We need to reset the DOM elements to show the original unsorted array
+    // This prevents the new algorithm from animating on top of already-sorted DOM elements
+    if (arrayRef.current) {
+      Array.from(arrayRef.current.children).forEach((child, idx) => {
+        const elem = child as HTMLElement;
+        // Reset text content to the original array value
+        elem.innerText = String(arr[idx]);
+        // Clear any background colors from previous animation
+        elem.style.backgroundColor = "transparent";
+      });
+    }
+
     // --- ANIMATION SETUP ---
     // Create an instance of the generator function with a copy of the input array
     // The generator will yield each swap step during sorting
@@ -67,9 +81,9 @@ const NumberArray = ({
         // Only animate if we have a valid swap (2 indices)
         if (swap.length > 1) {
           /* 
-           * ANIMATION APPROACH (Original Working Logic):
+           * ANIMATION APPROACH:
            * 
-           * Challenge: The generator executes synchronously and yields all steps immediately.
+           * The generator executes synchronously and yields all steps immediately.
            * The sorting completes instantly, but we want to visualize each step.
            * 
            * Solution: 
