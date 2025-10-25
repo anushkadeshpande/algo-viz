@@ -7,6 +7,7 @@ export enum EventType {
   SWAP = "swap",
   COMPARE = "compare",
   HIGHLIGHT = "highlight",
+  CLEAR = "clear",  // Explicitly clear highlights
   MARK = "mark",
   ACCESS = "access",
   // Add more event types as needed for different algorithms
@@ -20,6 +21,7 @@ export interface AlgorithmEvent {
   indices: number[];
   values?: number[];
   metadata?: Record<string, unknown>;
+  persist?: boolean
 }
 
 /**
@@ -40,6 +42,12 @@ export interface HighlightEvent extends AlgorithmEvent {
   type: EventType.HIGHLIGHT;
   indices: number[];
   color?: string;
+  persist?: boolean;  // If true, highlight persists until explicitly cleared
+}
+
+export interface ClearEvent extends AlgorithmEvent {
+  type: EventType.CLEAR;
+  indices: number[];  // Indices to clear, or empty array to clear all
 }
 
 /**
@@ -61,4 +69,11 @@ export const isCompareEvent = (event: AlgorithmEvent): event is CompareEvent => 
  */
 export const isHighlightEvent = (event: AlgorithmEvent): event is HighlightEvent => {
   return event.type === EventType.HIGHLIGHT;
+};
+
+/**
+ * Type guard to check if event is a clear event
+ */
+export const isClearEvent = (event: AlgorithmEvent): event is ClearEvent => {
+  return event.type === EventType.CLEAR;
 };

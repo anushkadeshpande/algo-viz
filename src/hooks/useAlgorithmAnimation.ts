@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlgorithmEvent, EventType, isSwapEvent } from "../types/algorithmEvents";
+import { AlgorithmEvent, EventType, isSwapEvent, isClearEvent } from "../types/algorithmEvents";
 
 /**
  * Custom hook to manage generic algorithm animation with pause/resume support
@@ -34,6 +34,7 @@ export const useAlgorithmAnimation = (
   const generatorRef = useRef<Generator | null>(null);
   const stepCounterRef = useRef(1);
   const previousEventRef = useRef<AlgorithmEvent | null>(null);
+  const persistentHighlightsRef = useRef<Set<number>>(new Set()); // Track indices with persistent highlights
   const pausedRef = useRef(false);
   const isCompleteRef = useRef(false);
   const eventArrRef = useRef(eventArr);
@@ -87,6 +88,7 @@ export const useAlgorithmAnimation = (
     isCompleteRef.current = false;
     stepCounterRef.current = 1;
     previousEventRef.current = null;
+    persistentHighlightsRef.current.clear(); // Clear persistent highlights
     pausedRef.current = isPaused;
     
     // Reset operation log display
@@ -137,15 +139,22 @@ export const useAlgorithmAnimation = (
       const event = value as AlgorithmEvent;
       const currentStep = stepCounterRef.current;
 
-      // Clean up previous event visualization
-      if (previousEventRef.current) {
-        clearEventVisualization(currentArrayRef, previousEventRef.current);
-      }
+      // Handle CLEAR event - explicitly clear highlights
+      if (isClearEvent(event)) {
+        handleClearEvent(currentArrayRef, event, currentStep, persistentHighlightsRef.current, (msg: string) => {
+          setOperations(prev => [...prev, msg]);
+        });
+      } else {
+        // Clean up previous event visualization (skip persistent highlights)
+        if (previousEventRef.current) {
+          clearEventVisualization(currentArrayRef, previousEventRef.current, persistentHighlightsRef.current);
+        }
 
-      // Visualize the current event based on its type
-      visualizeEvent(currentArrayRef, event, currentStep, (msg: string) => {
-        setOperations(prev => [...prev, msg]);
-      });
+        // Visualize the current event based on its type
+        visualizeEvent(currentArrayRef, event, currentStep, persistentHighlightsRef.current, (msg: string) => {
+          setOperations(prev => [...prev, msg]);
+        });
+      }
 
       // Store current event as previous for next iteration
       previousEventRef.current = event;
@@ -161,7 +170,7 @@ export const useAlgorithmAnimation = (
     } else {
       // Generator is done
       if (previousEventRef.current && currentArrayRef) {
-        clearEventVisualization(currentArrayRef, previousEventRef.current);
+        clearEventVisualization(currentArrayRef, previousEventRef.current, persistentHighlightsRef.current);
       }
 
       setOperations(prev => [...prev, `✓ Visualization complete! Total steps: ${stepCounterRef.current - 1}`]);
@@ -184,6 +193,7 @@ const visualizeEvent = (
   container: HTMLDivElement,
   event: AlgorithmEvent,
   stepNumber: number,
+  persistentHighlights: Set<number>,
   setOperation: (msg: string) => void
 ) => {
   switch (event.type) {
@@ -198,7 +208,7 @@ const visualizeEvent = (
       break;
     
     case EventType.HIGHLIGHT:
-      handleHighlightEvent(container, event, stepNumber, setOperation);
+      handleHighlightEvent(container, event, stepNumber, persistentHighlights, setOperation);
       break;
     
     default:
@@ -260,29 +270,74 @@ const handleHighlightEvent = (
   container: HTMLDivElement,
   event: AlgorithmEvent,
   stepNumber: number,
+  persistentHighlights: Set<number>,
   setOperation: (msg: string) => void
 ) => {
+  const highlightEvent = event as { color?: string; persist?: boolean };
   const elements = event.indices.map(idx => container.children[idx] as HTMLElement);
-  const color = (event as { color?: string }).color || "rgb(34 197 94)"; // Default green
+  const color = highlightEvent.color || "rgb(34 197 94)"; // Default green
   
   setOperation(`Step ${stepNumber}: Highlighting indices ${event.indices.join(", ")}`);
   
-  elements.forEach(elem => {
+  elements.forEach((elem, i) => {
     elem.style.backgroundColor = color;
+    
+    // Track persistent highlights
+    if (highlightEvent.persist) {
+      persistentHighlights.add(event.indices[i]);
+    }
   });
 };
 
 /**
+ * Handle CLEAR event: explicitly clear highlights
+ */
+const handleClearEvent = (
+  container: HTMLDivElement,
+  event: AlgorithmEvent,
+  stepNumber: number,
+  persistentHighlights: Set<number>,
+  setOperation: (msg: string) => void
+) => {
+  if (event.indices.length === 0) {
+    // Clear all highlights
+    setOperation(`Step ${stepNumber}: Clearing all highlights`);
+    persistentHighlights.forEach(idx => {
+      const elem = container.children[idx] as HTMLElement;
+      if (elem) {
+        elem.style.backgroundColor = "transparent";
+      }
+    });
+    persistentHighlights.clear();
+  } else {
+    // Clear specific indices
+    setOperation(`Step ${stepNumber}: Clearing highlights at indices ${event.indices.join(", ")}`);
+    event.indices.forEach(idx => {
+      const elem = container.children[idx] as HTMLElement;
+      if (elem) {
+        elem.style.backgroundColor = "transparent";
+      }
+      persistentHighlights.delete(idx);
+    });
+  }
+};
+
+/**
  * Clear visualization from a previous event
+ * Skips indices that have persistent highlights
  */
 const clearEventVisualization = (
   container: HTMLDivElement,
-  event: AlgorithmEvent
+  event: AlgorithmEvent,
+  persistentHighlights: Set<number>
 ) => {
   event.indices.forEach(idx => {
-    const elem = container.children[idx] as HTMLElement;
-    if (elem) {
-      elem.style.backgroundColor = "transparent";
+    // Don't clear if this index has a persistent highlight
+    if (!persistentHighlights.has(idx)) {
+      const elem = container.children[idx] as HTMLElement;
+      if (elem) {
+        elem.style.backgroundColor = "transparent";
+      }
     }
   });
 };
