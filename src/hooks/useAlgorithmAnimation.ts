@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlgorithmEvent, EventType, isSwapEvent } from "../types/algorithmEvents";
 
 /**
- * Custom hook to manage generic algorithm animation
+ * Custom hook to manage generic algorithm animation with pause/resume support
  * 
  * This hook is designed to be algorithm-agnostic and can handle:
  * - Sorting algorithms (swap, compare events)
@@ -13,19 +13,63 @@ import { AlgorithmEvent, EventType, isSwapEvent } from "../types/algorithmEvents
  * @param algorithm - Generator function that yields AlgorithmEvent objects
  * @param eventArr - Shared array to track all timeout handles
  * @param arrayRef - Reference to the DOM container holding array elements
+ * @param isPaused - External pause state from parent
+ * @param onComplete - Callback when animation completes
  * @returns Array of all operation messages
  */
 export const useAlgorithmAnimation = (
   arr: number[],
   algorithm: (arr: number[]) => Generator,
   eventArr: Array<ReturnType<typeof setTimeout>>,
-  arrayRef: React.RefObject<HTMLDivElement>
+  arrayRef: React.RefObject<HTMLDivElement>,
+  isPaused = false,
+  onComplete?: () => void
 ) => {
   // State: holds all operations performed during the animation
   const [operations, setOperations] = useState<string[]>([]);
+  const [isComplete, setIsComplete] = useState(false);
   
   // Ref to track all scheduled timeout handles created by the current animation
   const localTimeoutsRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+  const generatorRef = useRef<Generator | null>(null);
+  const stepCounterRef = useRef(1);
+  const previousEventRef = useRef<AlgorithmEvent | null>(null);
+  const pausedRef = useRef(false);
+  const isCompleteRef = useRef(false);
+  const eventArrRef = useRef(eventArr);
+  const arrayRefCurrent = useRef(arrayRef);
+  const onCompleteRef = useRef(onComplete);
+  const previousPausedRef = useRef(isPaused);
+
+  // Keep refs in sync
+  useEffect(() => {
+    eventArrRef.current = eventArr;
+    arrayRefCurrent.current = arrayRef;
+    onCompleteRef.current = onComplete;
+  }, [eventArr, arrayRef, onComplete]);
+
+  useEffect(() => {
+    isCompleteRef.current = isComplete;
+  }, [isComplete]);
+
+  // Handle pause/resume from parent
+  useEffect(() => {
+    const wasPaused = previousPausedRef.current;
+    pausedRef.current = isPaused;
+    previousPausedRef.current = isPaused;
+    
+    if (isPaused) {
+      // Clear pending timeouts when paused
+      localTimeoutsRef.current.forEach((timeoutId) => {
+        clearTimeout(timeoutId);
+      });
+      localTimeoutsRef.current = [];
+    } else if (wasPaused && !isPaused && generatorRef.current && !isCompleteRef.current) {
+      // Resume: only if we were previously paused (not on initial mount)
+      processNextStepInternal();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPaused]);
 
   useEffect(() => {
     // --- CLEANUP PHASE ---
@@ -39,6 +83,11 @@ export const useAlgorithmAnimation = (
 
     // Reset local timeout tracking
     localTimeoutsRef.current = [];
+    setIsComplete(false);
+    isCompleteRef.current = false;
+    stepCounterRef.current = 1;
+    previousEventRef.current = null;
+    pausedRef.current = isPaused;
     
     // Reset operation log display
     setOperations(["Starting visualization..."]);
@@ -53,70 +102,15 @@ export const useAlgorithmAnimation = (
       });
     }
 
-    // --- ANIMATION SETUP ---
     // Create an instance of the generator function with a copy of the input array
-    const algorithmGenerator = algorithm(arr.slice());
+    generatorRef.current = algorithm(arr.slice());
 
-    // Counter to schedule each animation step 1 second apart
-    let stepCounter = 1;
-    
-    // Track previous event for cleanup
-    let previousEvent: AlgorithmEvent | null = null;
-
-    /**
-     * Recursively iterate through all generator steps
-     * Each step yields an AlgorithmEvent that defines what to visualize
-     */
-    const iterateGenerator = (generator: Generator) => {
-      const { done, value } = generator.next();
-
-      if (!done) {
-        const event = value as AlgorithmEvent;
-        const currentStep = stepCounter; // Capture the current step number
-        
-        // Schedule the visualization of this event
-        const timeoutId = setTimeout(() => {
-          if (!arrayRef.current) return;
-
-          // Clean up previous event visualization
-          if (previousEvent) {
-            clearEventVisualization(arrayRef.current, previousEvent);
-          }
-
-          // Visualize the current event based on its type
-          visualizeEvent(arrayRef.current, event, currentStep, (msg: string) => {
-            setOperations(prev => [...prev, msg]);
-          });
-          
-          // Store current event as previous for next iteration
-          previousEvent = event;
-        }, currentStep * 1000);
-
-        eventArr.push(timeoutId);
-        localTimeoutsRef.current.push(timeoutId);
-        stepCounter++;
-        
-        // Recursively process the next step
-        iterateGenerator(generator);
-      } else {
-        // Generator is done; schedule a final cleanup
-        const finalTimeoutId = setTimeout(() => {
-          if (!arrayRef.current) return;
-          
-          if (previousEvent) {
-            clearEventVisualization(arrayRef.current, previousEvent);
-          }
-          
-          setOperations(prev => [...prev, `✓ Visualization complete! Total steps: ${stepCounter - 1}`]);
-        }, stepCounter * 1000);
-        
-        eventArr.push(finalTimeoutId);
-        localTimeoutsRef.current.push(finalTimeoutId);
+    // Auto-start the animation immediately
+    setTimeout(() => {
+      if (generatorRef.current && arrayRefCurrent.current.current) {
+        processNextStepInternal();
       }
-    };
-
-    // Start the recursive iteration
-    iterateGenerator(algorithmGenerator);
+    }, 0);
 
     // --- CLEANUP FUNCTION ---
     // Cancels all pending timeouts to prevent memory leaks
@@ -125,8 +119,59 @@ export const useAlgorithmAnimation = (
         clearTimeout(timeoutId);
       });
       localTimeoutsRef.current = [];
+      generatorRef.current = null;
     };
-  }, [algorithm, arr, eventArr, arrayRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [algorithm, arr, eventArr]);
+
+  /**
+   * Internal function to process next step (used by both auto-start and manual control)
+   */
+  const processNextStepInternal = () => {
+    const currentArrayRef = arrayRefCurrent.current.current;
+    if (!generatorRef.current || pausedRef.current || !currentArrayRef) return;
+
+    const { done, value } = generatorRef.current.next();
+
+    if (!done) {
+      const event = value as AlgorithmEvent;
+      const currentStep = stepCounterRef.current;
+
+      // Clean up previous event visualization
+      if (previousEventRef.current) {
+        clearEventVisualization(currentArrayRef, previousEventRef.current);
+      }
+
+      // Visualize the current event based on its type
+      visualizeEvent(currentArrayRef, event, currentStep, (msg: string) => {
+        setOperations(prev => [...prev, msg]);
+      });
+
+      // Store current event as previous for next iteration
+      previousEventRef.current = event;
+      stepCounterRef.current++;
+
+      // Schedule the next step
+      const timeoutId = setTimeout(() => {
+        processNextStepInternal();
+      }, 1000);
+
+      eventArrRef.current.push(timeoutId);
+      localTimeoutsRef.current.push(timeoutId);
+    } else {
+      // Generator is done
+      if (previousEventRef.current && currentArrayRef) {
+        clearEventVisualization(currentArrayRef, previousEventRef.current);
+      }
+
+      setOperations(prev => [...prev, `✓ Visualization complete! Total steps: ${stepCounterRef.current - 1}`]);
+      setIsComplete(true);
+      isCompleteRef.current = true;
+      if (onCompleteRef.current) {
+        onCompleteRef.current();
+      }
+    }
+  };
 
   return operations;
 };

@@ -23,15 +23,20 @@ import OperationLog from "../common/OperationLog";
  * @param arr - The initial array of numbers to visualize
  * @param algorithm - Generator function that yields AlgorithmEvent objects
  * @param eventArr - Shared timeout registry for cleanup across view changes
+ * @param onControlsReady - Callback to pass control functions to parent
  */
 const NumberArray = ({
   arr,
   algorithm,
-  eventArr
+  eventArr,
+  isPaused,
+  onComplete
 }: {
   arr: Array<number>;
   algorithm: (arr: number[]) => Generator;
   eventArr: Array<ReturnType<typeof setTimeout>>;
+  isPaused?: boolean;
+  onComplete?: () => void;
 }) => {
   // State: holds the initial array for rendering
   const [array, setArray] = useState<number[]>(arr);
@@ -41,8 +46,8 @@ const NumberArray = ({
   const arrayRef = useRef<HTMLDivElement>(null);
   
   // Custom hook: manages all animation logic based on events from the algorithm
-  // Returns an array of all operation messages
-  const operations = useAlgorithmAnimation(arr, algorithm, eventArr, arrayRef);
+  // Returns operations array and control functions
+  const operations = useAlgorithmAnimation(arr, algorithm, eventArr, arrayRef, isPaused, onComplete);
   
   // Update array state when input changes
   if (arr !== array) {
@@ -82,7 +87,7 @@ const NumberArray = ({
         </div>
       </div>
 
-      {/* Operation Log - Bottom Section (Fixed) */}
+      {/* Operation Log - Bottom Section */}
       <div className="border-t border-gray-700">
         <OperationLog operations={operations} />
       </div>
