@@ -39,7 +39,7 @@ const Menu = ({view, setView}: any) => {
                     {
                       selectedSubMenuOption === op.title? <ul>
                         {
-                          op.options.map(o => <li key={op.title}
+                          op.options.map(o => <li key={o}
                             className="bg-slate-600 pl-4 rounded-md my-2"
                             onClick={() =>
                               setView(o)
