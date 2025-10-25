@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { menuOptions } from "../utils/menuOptions";
 
-const Menu = ({setView, setIsOpen, isCollapsed = false}: any) => {
+const Menu = ({setView, setIsOpen, isCollapsed = false, view}: any) => {
   const [selectedMenuOption, setSelectedMenuOption] = useState("");
   const [selectedSubMenuOption, setSelectedSubMenuOption] = useState("");
 
@@ -82,7 +82,11 @@ const Menu = ({setView, setIsOpen, isCollapsed = false}: any) => {
                       selectedSubMenuOption === op.title? <ul>
                         {
                           op.options.map(o => <li key={o}
-                            className="bg-slate-600 pl-4 rounded-md my-2"
+                            className={`pl-4 rounded-md my-2 transition-colors ${
+                              view === o 
+                                ? 'bg-gray-600 text-white font-semibold border-l-4 border-yellow-500' 
+                                : 'bg-slate-600 hover:bg-slate-500'
+                            }`}
                             onClick={() =>
                               handleAlgorithmSelect(o)
                             }
