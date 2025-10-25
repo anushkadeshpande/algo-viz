@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { menuOptions } from "../utils/menuOptions";
 
-const Menu = ({view, setView}: any) => {
+const Menu = ({setView}: any) => {
   const [selectedMenuOption, setSelectedMenuOption] = useState("");
   const [selectedSubMenuOption, setSelectedSubMenuOption] = useState("");
 
